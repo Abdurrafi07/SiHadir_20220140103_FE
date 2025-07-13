@@ -51,7 +51,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         child: Column(
           children: [
             Text(
-              'Halo Admin $userName 👋\nSelamat datang di Dashboard!',
+              'Halo Admin $userName \nSelamat datang di Dashboard!',
               style: const TextStyle(fontSize: 18),
               textAlign: TextAlign.center,
             ),
@@ -110,13 +110,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                         context,
                         MaterialPageRoute(builder: (_) => const GuruScreen()),
                       );
-                    },
-                  ),
-                  _buildMenuButton(
-                    icon: Icons.check_circle_outline,
-                    label: 'Absensi',
-                    onTap: () {
-                      // TODO: Navigate to Absensi page
                     },
                   ),
                 ],

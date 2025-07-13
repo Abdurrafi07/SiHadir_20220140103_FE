@@ -66,13 +66,17 @@ class _GuruHomeScreenState extends State<GuruHomeScreen> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center, // Ubah ke center
           children: [
-            Text(
-              'Hai $userName 👩‍🏫\nSelamat mengajar!',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontSize: 18),
+            Center(
+              child: Text(
+                'Hai $userName\nSelamat mengajar!',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             const SizedBox(height: 30),
             Expanded(
@@ -91,7 +95,6 @@ class _GuruHomeScreenState extends State<GuruHomeScreen> {
                     label: 'Daftar Presensi',
                     onTap: _navigateToDaftarAbsensi,
                   ),
-                  // Tambahkan menu lainnya di sini jika diperlukan
                 ],
               ),
             ),
