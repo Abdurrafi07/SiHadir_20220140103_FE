@@ -21,6 +21,7 @@ class _GuruScreenState extends State<GuruScreen> {
 
   List<KelasModel> _kelasList = [];
   int? _selectedKelasId;
+  String? _kelasFilter;
 
   @override
   void initState() {
@@ -33,6 +34,7 @@ class _GuruScreenState extends State<GuruScreen> {
     final service = KelasService();
     try {
       final data = await service.getAllKelas();
+      if (!mounted) return;
       setState(() => _kelasList = data);
     } catch (e) {
       debugPrint("[ERROR LOAD KELAS] $e");
@@ -40,7 +42,7 @@ class _GuruScreenState extends State<GuruScreen> {
   }
 
   void _showGuruForm({GuruModel? guru}) async {
-    if (_kelasList.isEmpty) await _loadKelas();
+    if (_kelasList.isEmpty) await _loadKelas(); if (!mounted) return; 
 
     _nameController.text = guru?.nama ?? '';
     _emailController.text = guru?.email ?? '';
@@ -53,11 +55,10 @@ class _GuruScreenState extends State<GuruScreen> {
           ).id
         : null;
 
-    // Error states
-    String? _nameError;
-    String? _emailError;
-    String? _passwordError;
-    String? _kelasError;
+    String? nameError;
+    String? emailError;
+    String? passwordError;
+    String? kelasError;
 
     showDialog(
       context: context,
@@ -73,10 +74,10 @@ class _GuruScreenState extends State<GuruScreen> {
                     controller: _nameController,
                     decoration: InputDecoration(
                       labelText: 'Nama',
-                      errorText: _nameError,
+                      errorText: nameError,
                     ),
                     onChanged: (_) {
-                      if (_nameError != null) setState(() => _nameError = null);
+                      if (nameError != null) setState(() => nameError = null);
                     },
                   ),
                   const SizedBox(height: 8),
@@ -84,10 +85,10 @@ class _GuruScreenState extends State<GuruScreen> {
                     controller: _emailController,
                     decoration: InputDecoration(
                       labelText: 'Email',
-                      errorText: _emailError,
+                      errorText: emailError,
                     ),
                     onChanged: (_) {
-                      if (_emailError != null) setState(() => _emailError = null);
+                      if (emailError != null) setState(() => emailError = null);
                     },
                   ),
                   const SizedBox(height: 8),
@@ -96,11 +97,11 @@ class _GuruScreenState extends State<GuruScreen> {
                     decoration: InputDecoration(
                       labelText: 'Password',
                       hintText: guru == null ? null : 'Kosongkan jika tidak diubah',
-                      errorText: _passwordError,
+                      errorText: passwordError,
                     ),
                     obscureText: true,
                     onChanged: (_) {
-                      if (_passwordError != null) setState(() => _passwordError = null);
+                      if (passwordError != null) setState(() => passwordError = null);
                     },
                   ),
                   const SizedBox(height: 12),
@@ -115,7 +116,7 @@ class _GuruScreenState extends State<GuruScreen> {
                     onChanged: (val) => setState(() => _selectedKelasId = val),
                     decoration: InputDecoration(
                       labelText: 'Kelas Diampu',
-                      errorText: _kelasError,
+                      errorText: kelasError,
                     ),
                   ),
                 ],
@@ -135,19 +136,19 @@ class _GuruScreenState extends State<GuruScreen> {
                   bool valid = true;
 
                   setState(() {
-                    _nameError = null;
-                    _emailError = null;
-                    _passwordError = null;
-                    _kelasError = null;
+                    nameError = null;
+                    emailError = null;
+                    passwordError = null;
+                    kelasError = null;
                   });
 
                   if (nama.isEmpty) {
-                    _nameError = 'Nama wajib diisi';
+                    nameError = 'Nama wajib diisi';
                     valid = false;
                   }
 
                   if (email.isEmpty) {
-                    _emailError = 'Email wajib diisi';
+                    emailError = 'Email wajib diisi';
                     valid = false;
                   } else {
                     final state = context.read<GuruBloc>().state;
@@ -156,19 +157,19 @@ class _GuruScreenState extends State<GuruScreen> {
                         (g) => g.email == email && (guru == null || g.id != guru.id),
                       );
                       if (isDuplicate) {
-                        _emailError = 'Email sudah digunakan';
+                        emailError = 'Email sudah digunakan';
                         valid = false;
                       }
                     }
                   }
 
                   if (guru == null && pass.isEmpty) {
-                    _passwordError = 'Password wajib diisi';
+                    passwordError = 'Password wajib diisi';
                     valid = false;
                   }
 
                   if (_selectedKelasId == null || _selectedKelasId == 0) {
-                    _kelasError = 'Pilih kelas yang diampu';
+                    kelasError = 'Pilih kelas yang diampu';
                     valid = false;
                   }
 
@@ -216,19 +217,45 @@ class _GuruScreenState extends State<GuruScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Data Guru')),
+      appBar: AppBar(
+        title: const Text('Data Guru'),
+        actions: [
+          if (_kelasList.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: DropdownButton<String?>(
+                hint: const Text('Filter Kelas'),
+                value: _kelasFilter,
+                onChanged: (val) => setState(() => _kelasFilter = val),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text("Semua")),
+                  ..._kelasList.map(
+                    (k) => DropdownMenuItem(
+                      value: k.namaKelas,
+                      child: Text(k.namaKelas),
+                    ),
+                  )
+                ],
+              ),
+            )
+        ],
+      ),
       body: BlocBuilder<GuruBloc, GuruState>(
         builder: (context, state) {
           if (state is GuruLoading) {
             return const Center(child: CircularProgressIndicator());
           } else if (state is GuruLoaded) {
-            if (state.guruList.isEmpty) {
-              return const Center(child: Text("Belum ada data guru."));
+            final list = _kelasFilter == null
+                ? state.guruList
+                : state.guruList.where((g) => g.kelasDiampu == _kelasFilter).toList();
+
+            if (list.isEmpty) {
+              return const Center(child: Text("Tidak ada data guru."));
             }
             return ListView.builder(
-              itemCount: state.guruList.length,
+              itemCount: list.length,
               itemBuilder: (ctx, index) {
-                final guru = state.guruList[index];
+                final guru = list[index];
                 return ListTile(
                   title: Text(guru.nama),
                   subtitle: Text('${guru.email} | Kelas: ${guru.kelasDiampu ?? "-"}'),
@@ -241,8 +268,7 @@ class _GuruScreenState extends State<GuruScreen> {
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () =>
-                            context.read<GuruBloc>().add(DeleteGuru(guru.id)),
+                        onPressed: () => context.read<GuruBloc>().add(DeleteGuru(guru.id)),
                       ),
                     ],
                   ),
