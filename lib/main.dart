@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sihadir/data/repository/auth_repository.dart';
+import 'package:sihadir/presentation/absensi/bloc/absensi_bloc.dart';
 import 'package:sihadir/presentation/auth/login/bloc/login_bloc.dart';
 import 'package:sihadir/presentation/auth/login_screen.dart';
 import 'package:sihadir/presentation/auth/register/bloc/register_bloc.dart';
@@ -9,7 +10,9 @@ import 'package:sihadir/presentation/jadwal/bloc/jadwal_bloc.dart';
 import 'package:sihadir/presentation/kelas/bloc/kelas_bloc.dart';
 import 'package:sihadir/presentation/mapel/bloc/mapel_bloc.dart';
 import 'package:sihadir/presentation/siswa/bloc/siswa_bloc.dart';
+import 'package:sihadir/services/absensi_service.dart';
 import 'package:sihadir/services/guru_service.dart';
+import 'package:sihadir/services/jadwal_guru_service.dart';
 import 'package:sihadir/services/jadwal_service.dart';
 import 'package:sihadir/services/kelas_service.dart';
 import 'package:sihadir/services/mapel_service.dart';
@@ -60,6 +63,13 @@ class MyApp extends StatelessWidget {
 
         BlocProvider(
           create: (_) => GuruBloc(GuruService()),
+        ),
+
+        BlocProvider(
+          create: (_) => AbsensiBloc(
+            jadwalService: JadwalGuruService(ServiceHttpClient()),
+            absensiService: AbsensiService('http://10.0.2.2:8000/api'),
+          ),
         ),
       ],
       child: MaterialApp(
