@@ -20,6 +20,7 @@ class _KelasScreenState extends State<KelasScreen> {
     context.read<KelasBloc>().add(FetchKelas());
   }
 
+  /* ---------- FORM TAMBAH / EDIT ---------- */
   void showKelasForm({int? id, String? initialNama}) {
     _namaKelasController.text = initialNama ?? '';
 
@@ -41,41 +42,66 @@ class _KelasScreenState extends State<KelasScreen> {
               child: const Text('Batal'),
             ),
             ElevatedButton(
-onPressed: () {
-  final nama = _namaKelasController.text.trim();
-  if (nama.isNotEmpty) {
-    try {
-      if (id == null) {
-        context.read<KelasBloc>().add(AddKelas(nama));
-        debugPrint("[INFO] Menambahkan kelas dengan nama: $nama");
-      } else {
-        context.read<KelasBloc>().add(UpdateKelas(id, nama));
-        debugPrint("[INFO] Mengupdate kelas ID: $id dengan nama: $nama");
-      }
-
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(id == null ? 'Berhasil tambah kelas' : 'Berhasil edit kelas')),
-      );
-    } catch (e) {
-      debugPrint("[ERROR] Gagal memproses form: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi kesalahan: $e')),
-      );
-    }
-  } else {
-    debugPrint("[WARNING] Form nama kelas kosong.");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Nama kelas tidak boleh kosong')),
-    );
-  }
-},
-
+              onPressed: () {
+                final nama = _namaKelasController.text.trim();
+                if (nama.isNotEmpty) {
+                  if (id == null) {
+                    context.read<KelasBloc>().add(AddKelas(nama));
+                  } else {
+                    context.read<KelasBloc>().add(UpdateKelas(id, nama));
+                  }
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        id == null
+                            ? 'Berhasil tambah kelas'
+                            : 'Berhasil edit kelas',
+                      ),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Nama kelas tidak boleh kosong')),
+                  );
+                }
+              },
               child: const Text('Simpan'),
             ),
           ],
         );
       },
+    );
+  }
+
+  /* ---------- DIALOG KONFIRMASI DELETE ---------- */
+  void confirmDelete(int id, String namaKelas) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Hapus'),
+        content: Text('Apakah Anda yakin ingin menghapus kelas "$namaKelas"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            onPressed: () {
+              Navigator.pop(context); // tutup dialog
+              context.read<KelasBloc>().add(DeleteKelas(id));
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Berhasil hapus kelas')),
+              );
+            },
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -109,17 +135,14 @@ onPressed: () {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit, color: Colors.blue),
-                        onPressed:
-                            () => showKelasForm(
-                              id: kelas.id,
-                              initialNama: kelas.namaKelas,
-                            ),
+                        onPressed: () => showKelasForm(
+                          id: kelas.id,
+                          initialNama: kelas.namaKelas,
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          context.read<KelasBloc>().add(DeleteKelas(kelas.id));
-                        },
+                        onPressed: () => confirmDelete(kelas.id, kelas.namaKelas),
                       ),
                     ],
                   ),
@@ -133,7 +156,7 @@ onPressed: () {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => showKelasForm(), // ← Tambah kelas
+        onPressed: () => showKelasForm(), // Tambah kelas baru
         child: const Icon(Icons.add),
       ),
     );
