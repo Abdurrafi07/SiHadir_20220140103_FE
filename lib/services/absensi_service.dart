@@ -83,8 +83,8 @@ class AbsensiService {
         'Content-Type': 'multipart/form-data',
       });
 
-    // Laravel pakai POST + _method = PATCH
-    request.fields['_method'] = 'PATCH';
+    // Laravel pakai POST + _method = PUT
+    request.fields['_method'] = 'PUT';
 
     if (status != null) request.fields['status'] = status;
     if (latitude != null) request.fields['latitude'] = latitude.toString();
@@ -115,6 +115,9 @@ class AbsensiService {
       uri,
       headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
     );
+
+    print('STATUS CODE: ${response.statusCode}');
+    print('RESPONSE BODY: ${response.body}');
 
     if (response.statusCode == 200) {
       return response;

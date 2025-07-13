@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sihadir/presentation/absensi/bloc/absensi_bloc.dart';
 import 'package:sihadir/presentation/absensi/bloc/absensi_event.dart';
 import 'package:sihadir/presentation/absensi/bloc/absensi_state.dart';
+import 'package:intl/intl.dart';
 
 class AbsensiListScreen extends StatefulWidget {
   const AbsensiListScreen({super.key});
@@ -12,6 +13,9 @@ class AbsensiListScreen extends StatefulWidget {
 }
 
 class _AbsensiListScreenState extends State<AbsensiListScreen> {
+  String? selectedMapel;
+  DateTime? selectedDate;
+
   @override
   void initState() {
     super.initState();
@@ -40,41 +44,123 @@ class _AbsensiListScreenState extends State<AbsensiListScreen> {
             return Center(child: CircularProgressIndicator());
           } else if (state is AbsensiListLoaded) {
             final data = state.absensi;
+
             if (data.isEmpty) {
               return Center(child: Text('Belum ada data presensi.'));
             }
-            return ListView.builder(
-              itemCount: data.length,
-              itemBuilder: (context, index) {
-                final item = data[index];
-                return Card(
-                  margin: EdgeInsets.all(8),
-                  child: ListTile(
-                    title: Text('${item['siswa']['nama']} (${item['status']})'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Tanggal: ${item['tanggal']}'),
-                        Text('Mapel: ${item['jadwal']['mapel']?['nama_mapel'] ?? '-'}'),
-                        Text('Alamat: ${item['alamat'] ?? '-'}'),
-                      ],
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'update') {
-                          _showUpdateDialog(item['id']);
-                        } else if (value == 'delete') {
-                          _confirmDelete(item['id']);
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        PopupMenuItem(value: 'update', child: Text('Edit')),
-                        PopupMenuItem(value: 'delete', child: Text('Hapus')),
-                      ],
-                    ),
+
+            // Extract unique mapel
+            final List<String> mapelList = data
+                .map<String>((e) => e['jadwal']['mapel']?['nama_mapel']?.toString() ?? '-')
+                .toSet()
+                .toList();
+
+            // Apply filter
+            final filteredData = data.where((item) {
+              final mapel = item['jadwal']['mapel']?['nama_mapel']?.toString() ?? '';
+              final tanggal = item['tanggal']?.toString() ?? '';
+
+              final mapelMatch = selectedMapel == null || selectedMapel == mapel;
+              final dateMatch = selectedDate == null ||
+                  tanggal == DateFormat('yyyy-MM-dd').format(selectedDate!);
+
+              return mapelMatch && dateMatch;
+            }).toList();
+
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        value: selectedMapel,
+                        decoration: InputDecoration(labelText: 'Filter Mapel'),
+                        items: mapelList
+                            .map((mapel) => DropdownMenuItem<String>(
+                                  value: mapel,
+                                  child: Text(mapel),
+                                ))
+                            .toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            selectedMapel = val;
+                          });
+                        },
+                      ),
+                      ElevatedButton.icon(
+                        icon: Icon(Icons.date_range),
+                        label: Text(selectedDate == null
+                            ? 'Pilih Tanggal'
+                            : DateFormat('dd MMM yyyy').format(selectedDate!)),
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now(),
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2030),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              selectedDate = picked;
+                            });
+                          }
+                        },
+                      ),
+                      if (selectedDate != null || selectedMapel != null)
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              selectedDate = null;
+                              selectedMapel = null;
+                            });
+                          },
+                          icon: Icon(Icons.clear),
+                          tooltip: 'Reset Filter',
+                        )
+                    ],
                   ),
-                );
-              },
+                ),
+                Expanded(
+                  child: filteredData.isEmpty
+                      ? Center(child: Text('Tidak ada data sesuai filter.'))
+                      : ListView.builder(
+                          itemCount: filteredData.length,
+                          itemBuilder: (context, index) {
+                            final item = filteredData[index];
+                            return Card(
+                              margin: EdgeInsets.all(8),
+                              child: ListTile(
+                                title: Text('${item['siswa']['nama']} (${item['status']})'),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Tanggal: ${item['tanggal']}'),
+                                    Text('Mapel: ${item['jadwal']['mapel']?['nama_mapel'] ?? '-'}'),
+                                    Text('Alamat: ${item['alamat'] ?? '-'}'),
+                                  ],
+                                ),
+                                trailing: PopupMenuButton<String>(
+                                  onSelected: (value) {
+                                    if (value == 'update') {
+                                      _showUpdateDialog(item['id']);
+                                    } else if (value == 'delete') {
+                                      _confirmDelete(item['id']);
+                                    }
+                                  },
+                                  itemBuilder: (_) => [
+                                    PopupMenuItem(value: 'update', child: Text('Edit')),
+                                    PopupMenuItem(value: 'delete', child: Text('Hapus')),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
             );
           } else if (state is AbsensiError) {
             return Center(child: Text('Error: ${state.message}'));
@@ -95,7 +181,7 @@ class _AbsensiListScreenState extends State<AbsensiListScreen> {
           value: selectedStatus,
           hint: Text('Pilih Status Baru'),
           items: ['hadir', 'izin', 'sakit', 'alfa'].map((status) {
-            return DropdownMenuItem(
+            return DropdownMenuItem<String>(
               value: status,
               child: Text(status),
             );
@@ -113,9 +199,9 @@ class _AbsensiListScreenState extends State<AbsensiListScreen> {
             onPressed: () {
               if (selectedStatus != null) {
                 context.read<AbsensiBloc>().add(UpdateAbsensi(
-                  id: id,
-                  status: selectedStatus,
-                ));
+                      id: id,
+                      status: selectedStatus,
+                    ));
                 Navigator.pop(context);
               }
             },
