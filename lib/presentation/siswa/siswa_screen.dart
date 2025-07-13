@@ -20,7 +20,11 @@ class _SiswaScreenState extends State<SiswaScreen> {
   final TextEditingController _nisnController = TextEditingController();
   final TextEditingController _tanggalLahirController = TextEditingController();
   final TextEditingController _alamatController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
+  final FocusNode _searchFocusNode = FocusNode();
+
+  String _searchQuery = '';
   String? _jenisKelamin;
   int? _selectedKelasId;
   int? _selectedFilterKelasId;
@@ -31,6 +35,10 @@ class _SiswaScreenState extends State<SiswaScreen> {
     super.initState();
     context.read<SiswaBloc>().add(FetchSiswa());
     _loadKelas();
+    // Tampilkan keyboard otomatis
+    Future.delayed(const Duration(milliseconds: 500), () {
+      FocusScope.of(context).requestFocus(_searchFocusNode);
+    });
   }
 
   Future<void> _loadKelas() async {
@@ -101,20 +109,14 @@ class _SiswaScreenState extends State<SiswaScreen> {
                 children: [
                   TextField(
                     controller: _namaController,
-                    decoration: InputDecoration(
-                      labelText: 'Nama',
-                      errorText: namaErrorText,
-                    ),
+                    decoration: InputDecoration(labelText: 'Nama', errorText: namaErrorText),
                     onChanged: (_) => setState(() => namaErrorText = null),
                   ),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _nisnController,
                     keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'NISN',
-                      errorText: nisnErrorText,
-                    ),
+                    decoration: InputDecoration(labelText: 'NISN', errorText: nisnErrorText),
                     onChanged: (_) => setState(() => nisnErrorText = null),
                   ),
                   const SizedBox(height: 8),
@@ -125,10 +127,7 @@ class _SiswaScreenState extends State<SiswaScreen> {
                       DropdownMenuItem(value: 'perempuan', child: Text('Perempuan')),
                     ],
                     onChanged: (val) => setState(() => _jenisKelamin = val),
-                    decoration: InputDecoration(
-                      labelText: 'Jenis Kelamin',
-                      errorText: jenisKelaminErrorText,
-                    ),
+                    decoration: InputDecoration(labelText: 'Jenis Kelamin', errorText: jenisKelaminErrorText),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -144,26 +143,17 @@ class _SiswaScreenState extends State<SiswaScreen> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _alamatController,
-                    decoration: InputDecoration(
-                      labelText: 'Alamat',
-                      errorText: alamatErrorText,
-                    ),
+                    decoration: InputDecoration(labelText: 'Alamat', errorText: alamatErrorText),
                     onChanged: (_) => setState(() => alamatErrorText = null),
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<int>(
                     value: _selectedKelasId,
                     items: _kelasList
-                        .map((kelas) => DropdownMenuItem(
-                              value: kelas.id,
-                              child: Text(kelas.namaKelas),
-                            ))
+                        .map((kelas) => DropdownMenuItem(value: kelas.id, child: Text(kelas.namaKelas)))
                         .toList(),
                     onChanged: (val) => setState(() => _selectedKelasId = val),
-                    decoration: InputDecoration(
-                      labelText: 'Kelas',
-                      errorText: kelasErrorText,
-                    ),
+                    decoration: InputDecoration(labelText: 'Kelas', errorText: kelasErrorText),
                   ),
                 ],
               ),
@@ -272,6 +262,8 @@ class _SiswaScreenState extends State<SiswaScreen> {
     _nisnController.dispose();
     _tanggalLahirController.dispose();
     _alamatController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -292,10 +284,7 @@ class _SiswaScreenState extends State<SiswaScreen> {
                   border: OutlineInputBorder(),
                 ),
                 items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('Semua Kelas'),
-                  ),
+                  const DropdownMenuItem(value: null, child: Text('Semua Kelas')),
                   ..._kelasList.map(
                     (kelas) => DropdownMenuItem(
                       value: kelas.id,
@@ -306,20 +295,49 @@ class _SiswaScreenState extends State<SiswaScreen> {
                 onChanged: (val) => setState(() => _selectedFilterKelasId = val),
               ),
             ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: TextField(
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              decoration: InputDecoration(
+                labelText: 'Cari berdasarkan NISN atau Nama',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                ),
+              ),
+              onChanged: (value) {
+                setState(() => _searchQuery = value.toLowerCase());
+              },
+            ),
+          ),
           Expanded(
             child: BlocBuilder<SiswaBloc, SiswaState>(
               builder: (context, state) {
                 if (state is SiswaLoading) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (state is SiswaLoaded) {
-                  final filteredSiswaList = _selectedFilterKelasId == null
-                      ? state.siswaList
-                      : state.siswaList.where((s) => _kelasList.any((k) =>
-                          k.id == _selectedFilterKelasId &&
-                          k.namaKelas == s.kelas)).toList();
+                  List<SiswaModel> filteredSiswaList = state.siswaList;
+
+                  if (_selectedFilterKelasId != null) {
+                    filteredSiswaList = filteredSiswaList.where((s) =>
+                        _kelasList.any((k) =>
+                            k.id == _selectedFilterKelasId && k.namaKelas == s.kelas)).toList();
+                  }
+
+                  if (_searchQuery.isNotEmpty) {
+                    filteredSiswaList = filteredSiswaList.where((s) =>
+                        s.nama.toLowerCase().contains(_searchQuery) ||
+                        s.nisn.toLowerCase().contains(_searchQuery)).toList();
+                  }
 
                   if (filteredSiswaList.isEmpty) {
-                    return const Center(child: Text("Tidak ada siswa untuk kelas ini."));
+                    return const Center(child: Text("Tidak ada siswa yang cocok."));
                   }
 
                   return ListView.builder(
@@ -328,7 +346,7 @@ class _SiswaScreenState extends State<SiswaScreen> {
                       final siswa = filteredSiswaList[index];
                       return ListTile(
                         title: Text(siswa.nama),
-                        subtitle: Text('${siswa.nisn} | Kelas: ${siswa.kelas ?? "-"}'),
+                        subtitle: Text(siswa.nisn),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -338,8 +356,7 @@ class _SiswaScreenState extends State<SiswaScreen> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () =>
-                                  context.read<SiswaBloc>().add(DeleteSiswa(siswa.id)),
+                              onPressed: () => context.read<SiswaBloc>().add(DeleteSiswa(siswa.id)),
                             ),
                           ],
                         ),
