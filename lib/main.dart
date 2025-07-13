@@ -4,10 +4,12 @@ import 'package:sihadir/data/repository/auth_repository.dart';
 import 'package:sihadir/presentation/auth/login/bloc/login_bloc.dart';
 import 'package:sihadir/presentation/auth/login_screen.dart';
 import 'package:sihadir/presentation/auth/register/bloc/register_bloc.dart';
+import 'package:sihadir/presentation/guru/bloc/guru_bloc.dart';
 import 'package:sihadir/presentation/jadwal/bloc/jadwal_bloc.dart';
 import 'package:sihadir/presentation/kelas/bloc/kelas_bloc.dart';
 import 'package:sihadir/presentation/mapel/bloc/mapel_bloc.dart';
 import 'package:sihadir/presentation/siswa/bloc/siswa_bloc.dart';
+import 'package:sihadir/services/guru_service.dart';
 import 'package:sihadir/services/jadwal_service.dart';
 import 'package:sihadir/services/kelas_service.dart';
 import 'package:sihadir/services/mapel_service.dart';
@@ -54,6 +56,10 @@ class MyApp extends StatelessWidget {
 
         BlocProvider(
           create: (_) => SiswaBloc(SiswaService()),
+        ),
+
+        BlocProvider(
+          create: (_) => GuruBloc(GuruService()),
         ),
       ],
       child: MaterialApp(
