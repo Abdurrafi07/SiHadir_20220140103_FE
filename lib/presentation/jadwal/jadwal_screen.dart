@@ -348,7 +348,7 @@ class _JadwalScreenState extends State<JadwalScreen> {
                                           ),
                                           ElevatedButton(
                                             onPressed: () => Navigator.pop(ctx, true),
-                                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white,),
                                             child: const Text("Hapus"),
                                           ),
                                         ],

@@ -214,7 +214,7 @@ class _MapelScreenState extends State<MapelScreen> {
                                               child: const Text("Batal"),
                                             ),
                                             ElevatedButton(
-                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white,),
                                               onPressed: () {
                                                 Navigator.pop(ctx); // Tutup dialog
                                                 context.read<MapelBloc>().add(DeleteMapel(mapel.id));

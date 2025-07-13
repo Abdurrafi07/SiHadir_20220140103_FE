@@ -89,6 +89,7 @@ class _KelasScreenState extends State<KelasScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
             ),
             onPressed: () {
               Navigator.pop(context); // tutup dialog

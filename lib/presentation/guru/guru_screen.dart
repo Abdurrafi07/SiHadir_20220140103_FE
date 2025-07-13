@@ -317,6 +317,7 @@ class _GuruScreenState extends State<GuruScreen> {
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
                                       ),
                                       child: const Text('Hapus'),
                                     ),
