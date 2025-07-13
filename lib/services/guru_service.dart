@@ -13,12 +13,19 @@ class GuruService {
     debugPrint("[SERVICE] GET GURU: ${response.body}");
 
     final data = json.decode(response.body);
-    if (response.statusCode == 200 && data['status_code'] == 200) {
-      return List<GuruModel>.from(
-        data['data'].map((e) => GuruModel.fromJson(e)),
-      );
+    final statusCode = data['status_code'];
+    final message = data['message'];
+    final rawData = data['data'];
+
+    // ✅ Tangani khusus jika status_code 404 dan data kosong
+    if (response.statusCode == 200 && statusCode == 200) {
+      if (rawData == null || rawData is! List) return [];
+      return rawData.map((e) => GuruModel.fromJson(e)).toList();
+    } else if (statusCode == 404 &&
+        message.toString().toLowerCase().contains("tidak ada data")) {
+      return []; // ✅ Perlakukan "tidak ada data" sebagai list kosong
     } else {
-      throw Exception("Gagal ambil guru: ${data['message']}");
+      throw Exception("Gagal ambil guru: $message");
     }
   }
 
