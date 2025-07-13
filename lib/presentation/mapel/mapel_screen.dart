@@ -202,10 +202,31 @@ class _MapelScreenState extends State<MapelScreen> {
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () => context
-                                        .read<MapelBloc>()
-                                        .add(DeleteMapel(mapel.id)),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text("Konfirmasi"),
+                                          content: Text("Yakin ingin menghapus mapel '${mapel.namaMapel}'?"),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(ctx),
+                                              child: const Text("Batal"),
+                                            ),
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                              onPressed: () {
+                                                Navigator.pop(ctx); // Tutup dialog
+                                                context.read<MapelBloc>().add(DeleteMapel(mapel.id));
+                                              },
+                                              child: const Text("Hapus"),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   )
+
                                 ],
                               )
                             : null,

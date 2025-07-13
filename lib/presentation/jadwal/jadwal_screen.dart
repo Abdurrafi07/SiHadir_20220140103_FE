@@ -336,10 +336,32 @@ class _JadwalScreenState extends State<JadwalScreen> {
                                 IconButton(
                                   icon: const Icon(Icons.delete, color: Colors.red),
                                   onPressed: () async {
-                                    await _jadwalService.deleteJadwal(j.id);
-                                    if (!mounted) return;
-                                    _loadAllData();
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text("Konfirmasi"),
+                                        content: const Text("Yakin ingin menghapus jadwal ini?"),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, false),
+                                            child: const Text("Batal"),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () => Navigator.pop(ctx, true),
+                                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                            child: const Text("Hapus"),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirm == true) {
+                                      await _jadwalService.deleteJadwal(j.id);
+                                      if (!mounted) return;
+                                      _loadAllData();
+                                    }
                                   },
+
                                 ),
                               ],
                             ),

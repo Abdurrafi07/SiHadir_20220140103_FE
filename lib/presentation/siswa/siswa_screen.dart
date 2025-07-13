@@ -271,7 +271,6 @@ class _SiswaScreenState extends State<SiswaScreen> {
               Navigator.pop(ctx);
               context.read<SiswaBloc>().add(DeleteSiswa(siswaId));
             },
-            icon: const Icon(Icons.delete),
             label: const Text('Hapus'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
