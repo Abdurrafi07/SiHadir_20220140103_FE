@@ -5,7 +5,9 @@ import 'package:sihadir/presentation/auth/login/bloc/login_bloc.dart';
 import 'package:sihadir/presentation/auth/login_screen.dart';
 import 'package:sihadir/presentation/auth/register/bloc/register_bloc.dart';
 import 'package:sihadir/presentation/kelas/bloc/kelas_bloc.dart';
+import 'package:sihadir/presentation/mapel/bloc/mapel_bloc.dart';
 import 'package:sihadir/services/kelas_service.dart';
+import 'package:sihadir/services/mapel_service.dart';
 import 'package:sihadir/services/service_http_client.dart';
 
 void main() {
@@ -35,7 +37,11 @@ class MyApp extends StatelessWidget {
         ),
 
         BlocProvider(
-          create: (_) => KelasBloc(KelasService()), // Tambahkan ini
+          create: (_) => KelasBloc(KelasService()),
+        ),
+
+        BlocProvider(
+          create: (_) => MapelBloc(MapelService()),
         ),
       ],
       child: MaterialApp(
