@@ -4,6 +4,8 @@ import 'package:sihadir/data/repository/auth_repository.dart';
 import 'package:sihadir/presentation/auth/login/bloc/login_bloc.dart';
 import 'package:sihadir/presentation/auth/login_screen.dart';
 import 'package:sihadir/presentation/auth/register/bloc/register_bloc.dart';
+import 'package:sihadir/presentation/kelas/bloc/kelas_bloc.dart';
+import 'package:sihadir/services/kelas_service.dart';
 import 'package:sihadir/services/service_http_client.dart';
 
 void main() {
@@ -30,6 +32,10 @@ class MyApp extends StatelessWidget {
               (context) => RegisterBloc(
                 authRepository: AuthRepository(ServiceHttpClient()),
               ),
+        ),
+
+        BlocProvider(
+          create: (_) => KelasBloc(KelasService()), // Tambahkan ini
         ),
       ],
       child: MaterialApp(
