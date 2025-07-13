@@ -22,6 +22,9 @@ class _JadwalScreenState extends State<JadwalScreen> {
   List<KelasModel> _kelasList = [];
   List<MapelModel> _mapelList = [];
 
+  final List<String> _hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+
   @override
   void initState() {
     super.initState();
@@ -84,10 +87,11 @@ class _JadwalScreenState extends State<JadwalScreen> {
                   onChanged: (val) => setState(() => selectedMapelId = val),
                 ),
                 const SizedBox(height: 8),
-                TextField(
+                DropdownButtonFormField<String>(
+                  value: _hariList.contains(hari) ? hari : null,
                   decoration: const InputDecoration(labelText: 'Hari'),
-                  controller: TextEditingController(text: hari),
-                  onChanged: (val) => hari = val,
+                  items: _hariList.map((h) => DropdownMenuItem(value: h, child: Text(h))).toList(),
+                  onChanged: (val) => setState(() => hari = val ?? ''),
                 ),
                 const SizedBox(height: 8),
                 TextField(
