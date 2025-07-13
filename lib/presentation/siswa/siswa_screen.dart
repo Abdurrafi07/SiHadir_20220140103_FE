@@ -1,3 +1,4 @@
+// Tambahkan import ini jika belum ada
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -21,7 +22,6 @@ class _SiswaScreenState extends State<SiswaScreen> {
   final TextEditingController _tanggalLahirController = TextEditingController();
   final TextEditingController _alamatController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
-
   final FocusNode _searchFocusNode = FocusNode();
 
   String _searchQuery = '';
@@ -35,7 +35,6 @@ class _SiswaScreenState extends State<SiswaScreen> {
     super.initState();
     context.read<SiswaBloc>().add(FetchSiswa());
     _loadKelas();
-    // Tampilkan keyboard otomatis
     Future.delayed(const Duration(milliseconds: 500), () {
       FocusScope.of(context).requestFocus(_searchFocusNode);
     });
@@ -256,6 +255,34 @@ class _SiswaScreenState extends State<SiswaScreen> {
     );
   }
 
+  void _confirmDeleteSiswa(int siswaId, String nama) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Konfirmasi Hapus'),
+        content: Text('Apakah kamu yakin ingin menghapus siswa "$nama"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              context.read<SiswaBloc>().add(DeleteSiswa(siswaId));
+            },
+            icon: const Icon(Icons.delete),
+            label: const Text('Hapus'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _namaController.dispose();
@@ -356,7 +383,7 @@ class _SiswaScreenState extends State<SiswaScreen> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => context.read<SiswaBloc>().add(DeleteSiswa(siswa.id)),
+                              onPressed: () => _confirmDeleteSiswa(siswa.id, siswa.nama),
                             ),
                           ],
                         ),
