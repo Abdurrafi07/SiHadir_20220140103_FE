@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:sihadir/presentation/absensi/absensi_list_screen.dart';
 import 'package:sihadir/presentation/absensi/absensi_sreen.dart';
 import 'package:sihadir/presentation/auth/login_screen.dart';
 
@@ -42,6 +43,13 @@ class _GuruHomeScreenState extends State<GuruHomeScreen> {
     );
   }
 
+  void _navigateToDaftarAbsensi() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AbsensiListScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,7 +70,9 @@ class _GuruHomeScreenState extends State<GuruHomeScreen> {
           children: [
             Text(
               'Hai $userName 👩‍🏫\nSelamat mengajar!',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontSize: 18),
             ),
             const SizedBox(height: 30),
             Expanded(
@@ -75,6 +85,11 @@ class _GuruHomeScreenState extends State<GuruHomeScreen> {
                     icon: Icons.check_circle_outline,
                     label: 'Absensi',
                     onTap: _navigateToAbsensi,
+                  ),
+                  _buildMenuButton(
+                    icon: Icons.list_alt_outlined,
+                    label: 'Daftar Presensi',
+                    onTap: _navigateToDaftarAbsensi,
                   ),
                   // Tambahkan menu lainnya di sini jika diperlukan
                 ],
@@ -97,9 +112,7 @@ class _GuruHomeScreenState extends State<GuruHomeScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 3,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       onPressed: onTap,
       child: Column(

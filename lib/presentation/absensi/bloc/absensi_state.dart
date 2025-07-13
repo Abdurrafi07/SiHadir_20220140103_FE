@@ -25,3 +25,13 @@ class AbsensiError extends AbsensiState {
   final String message;
   AbsensiError(this.message);
 }
+
+class AbsensiListLoaded extends AbsensiState {
+  final List<dynamic> absensi;
+
+  AbsensiListLoaded(this.absensi);
+}
+
+class AbsensiUpdating extends AbsensiState {}
+
+class AbsensiDeleting extends AbsensiState {}
