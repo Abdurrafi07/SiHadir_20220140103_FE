@@ -49,32 +49,50 @@ class _LoginScreenState extends State<LoginScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center, // untuk center horizontal
               children: [
-                const SpaceHeight(170),
+                const SpaceHeight(100),
+
+                // Gambar Bulat
+                CircleAvatar(
+                  radius: 60,
+                  backgroundImage: const AssetImage('assets/images/logo.png'),
+                  backgroundColor: Colors.transparent,
+                ),
+
+                const SpaceHeight(30),
+
+                // Teks Selamat Datang
                 Text(
                   'SELAMAT DATANG KEMBALI',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: MediaQuery.of(context).size.width * 0.05,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+
                 const SpaceHeight(30),
+
+                // TextField Email
                 CustomTextField(
                   validator: 'Email tidak boleh kosong',
                   controller: emailController,
                   label: 'Email',
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.all(8.0),
+                  prefixIcon: const Padding(
+                    padding: EdgeInsets.all(8.0),
                     child: Icon(Icons.email),
                   ),
                 ),
+
+                // TextField Password
                 CustomTextField(
                   validator: 'Password tidak boleh kosong',
                   controller: passwordController,
                   label: 'Password',
                   obscureText: !isShowPassword,
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.all(8.0),
+                  prefixIcon: const Padding(
+                    padding: EdgeInsets.all(8.0),
                     child: Icon(Icons.lock),
                   ),
                   suffixIcon: IconButton(
@@ -89,13 +107,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+
                 const SpaceHeight(30),
+
+                // Tombol Login
                 BlocConsumer<LoginBloc, LoginState>(
                   listener: (context, state) {
                     if (state is LoginFailure) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(state.error)));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(state.error)),
+                      );
                     } else if (state is LoginSuccess) {
                       final role = state.responseModel.data?.role;
                       if (role == 'admin') {
@@ -117,25 +138,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   builder: (context, state) {
                     return Button.filled(
-                      onPressed:
-                          state is LoginLoading
-                              ? null
-                              : () {
-                                if (_key.currentState!.validate()) {
-                                  final request = LoginRequestModel(
-                                    email: emailController.text,
-                                    password: passwordController.text,
-                                  );
-                                  context.read<LoginBloc>().add(
-                                    LoginRequested(requestModel: request),
-                                  );
-                                }
-                              },
+                      onPressed: state is LoginLoading
+                          ? null
+                          : () {
+                              if (_key.currentState!.validate()) {
+                                final request = LoginRequestModel(
+                                  email: emailController.text,
+                                  password: passwordController.text,
+                                );
+                                context.read<LoginBloc>().add(
+                                  LoginRequested(requestModel: request),
+                                );
+                              }
+                            },
                       label: state is LoginLoading ? 'Memuat...' : 'Masuk',
                     );
                   },
                 ),
+
                 const SpaceHeight(20),
+
+                // Navigasi ke halaman register
                 Text.rich(
                   TextSpan(
                     text: 'Belum memiliki akun? Silahkan ',
@@ -147,11 +170,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextSpan(
                         text: 'Daftar disini!',
                         style: TextStyle(color: AppColors.primary),
-                        recognizer:
-                            TapGestureRecognizer()
-                              ..onTap = () {
-                                context.push(const RegisterScreen());
-                              },
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () {
+                            context.push(const RegisterScreen());
+                          },
                       ),
                     ],
                   ),
