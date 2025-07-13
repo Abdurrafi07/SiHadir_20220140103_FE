@@ -21,17 +21,24 @@ class _JadwalScreenState extends State<JadwalScreen> {
   List<JadwalModel> _jadwalList = [];
   List<KelasModel> _kelasList = [];
   List<MapelModel> _mapelList = [];
+  final List<String> _hariList = [
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+  ];
 
-  final List<String> _hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-
+  KelasModel? _selectedKelas;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadAllData();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadAllData() async {
     try {
       final jadwal = await _jadwalService.getAllJadwal();
       final kelas = await _kelasService.getAllKelas();
@@ -41,14 +48,41 @@ class _JadwalScreenState extends State<JadwalScreen> {
         _jadwalList = jadwal;
         _kelasList = kelas;
         _mapelList = mapel;
+        if (_kelasList.isNotEmpty) {
+          _selectedKelas ??= _kelasList.first;
+        }
       });
     } catch (e) {
-      debugPrint("[ERROR LOAD DATA] $e");
+      debugPrint("[LOAD ERROR] $e");
     }
   }
 
+  Map<String, List<JadwalModel>> _groupByHari(List<JadwalModel> list) {
+    final Map<String, List<JadwalModel>> map = {
+      'Senin': [],
+      'Selasa': [],
+      'Rabu': [],
+      'Kamis': [],
+      'Jumat': [],
+      'Sabtu': [],
+    };
+
+    for (var j in list) {
+      if (_selectedKelas != null && j.kelasId == _selectedKelas!.id) {
+        map[j.hari]?.add(j);
+      }
+    }
+    return map;
+  }
+
+  List<MapelModel> _filteredMapel(int? kelasId) {
+    if (kelasId == null) return [];
+    final namaKelas = _kelasList.firstWhere((k) => k.id == kelasId).namaKelas;
+    return _mapelList.where((m) => m.kelas.contains(namaKelas)).toList();
+  }
+
   void _showForm({JadwalModel? jadwal}) {
-    int? selectedKelasId = jadwal?.kelasId;
+    int? selectedKelasId = jadwal?.kelasId ?? _selectedKelas?.id;
     int? selectedMapelId = jadwal?.mapelId;
     String hari = jadwal?.hari ?? '';
     String jamMulai = jadwal?.jamMulai ?? '';
@@ -56,135 +90,214 @@ class _JadwalScreenState extends State<JadwalScreen> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(jadwal == null ? 'Tambah Jadwal' : 'Edit Jadwal'),
-        content: SingleChildScrollView(
-          child: StatefulBuilder(
-            builder: (context, setState) => Column(
-              children: [
-                DropdownButtonFormField<int>(
-                  value: selectedKelasId,
-                  decoration: const InputDecoration(labelText: 'Kelas'),
-                  items: _kelasList.map((k) => DropdownMenuItem(
-                    value: k.id,
-                    child: Text(k.namaKelas),
-                  )).toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      selectedKelasId = val;
-                      selectedMapelId = null;
-                    });
-                  },
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<int>(
-                  value: selectedMapelId,
-                  decoration: const InputDecoration(labelText: 'Mapel'),
-                  items: _filteredMapelList(selectedKelasId).map((m) => DropdownMenuItem(
-                    value: m.id,
-                    child: Text(m.namaMapel),
-                  )).toList(),
-                  onChanged: (val) => setState(() => selectedMapelId = val),
-                ),
-                const SizedBox(height: 8),
-                DropdownButtonFormField<String>(
-                  value: _hariList.contains(hari) ? hari : null,
-                  decoration: const InputDecoration(labelText: 'Hari'),
-                  items: _hariList.map((h) => DropdownMenuItem(value: h, child: Text(h))).toList(),
-                  onChanged: (val) => setState(() => hari = val ?? ''),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  decoration: const InputDecoration(labelText: 'Jam Mulai'),
-                  controller: TextEditingController(text: jamMulai),
-                  onChanged: (val) => jamMulai = val,
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  decoration: const InputDecoration(labelText: 'Jam Selesai'),
-                  controller: TextEditingController(text: jamSelesai),
-                  onChanged: (val) => jamSelesai = val,
-                ),
-              ],
+      builder:
+          (ctx) => AlertDialog(
+            title: Text(jadwal == null ? 'Tambah Jadwal' : 'Edit Jadwal'),
+            content: StatefulBuilder(
+              builder:
+                  (context, setState) => SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        DropdownButtonFormField<int>(
+                          value: selectedKelasId,
+                          decoration: const InputDecoration(labelText: 'Kelas'),
+                          items:
+                              _kelasList.map((k) {
+                                return DropdownMenuItem(
+                                  value: k.id,
+                                  child: Text(k.namaKelas),
+                                );
+                              }).toList(),
+                          onChanged: (val) {
+                            setState(() {
+                              selectedKelasId = val;
+                              selectedMapelId = null;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<int>(
+                          value: selectedMapelId,
+                          decoration: const InputDecoration(labelText: 'Mapel'),
+                          items:
+                              _filteredMapel(selectedKelasId).map((m) {
+                                return DropdownMenuItem(
+                                  value: m.id,
+                                  child: Text(m.namaMapel),
+                                );
+                              }).toList(),
+                          onChanged:
+                              (val) => setState(() => selectedMapelId = val),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: _hariList.contains(hari) ? hari : null,
+                          decoration: const InputDecoration(labelText: 'Hari'),
+                          items:
+                              _hariList
+                                  .map(
+                                    (h) => DropdownMenuItem(
+                                      value: h,
+                                      child: Text(h),
+                                    ),
+                                  )
+                                  .toList(),
+                          onChanged: (val) => setState(() => hari = val ?? ''),
+                        ),
+
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          initialValue: jamMulai,
+                          decoration: const InputDecoration(
+                            labelText: 'Jam Mulai',
+                          ),
+                          onChanged: (val) => jamMulai = val,
+                        ),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          initialValue: jamSelesai,
+                          decoration: const InputDecoration(
+                            labelText: 'Jam Selesai',
+                          ),
+                          onChanged: (val) => jamSelesai = val,
+                        ),
+                      ],
+                    ),
+                  ),
             ),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
-          ElevatedButton(
-            onPressed: () async {
-              if (selectedKelasId == null || selectedMapelId == null || hari.isEmpty || jamMulai.isEmpty || jamSelesai.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Semua field wajib diisi')));
-                return;
-              }
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text("Batal"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if ([
+                    selectedKelasId,
+                    selectedMapelId,
+                    hari,
+                    jamMulai,
+                    jamSelesai,
+                  ].any(
+                    (e) => e == null || (e is String && e.trim().isEmpty),
+                  )) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Semua field wajib diisi")),
+                    );
+                    return;
+                  }
 
-              try {
-                if (jadwal == null) {
-                  await _jadwalService.createJadwal(
-                    kelasId: selectedKelasId!,
-                    mapelId: selectedMapelId!,
-                    hari: hari,
-                    jamMulai: jamMulai,
-                    jamSelesai: jamSelesai,
-                  );
-                } else {
-                  await _jadwalService.updateJadwal(
-                    id: jadwal.id,
-                    kelasId: selectedKelasId!,
-                    mapelId: selectedMapelId!,
-                    hari: hari,
-                    jamMulai: jamMulai,
-                    jamSelesai: jamSelesai,
-                  );
-                }
-                Navigator.pop(ctx);
-                _loadData();
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menyimpan: $e')));
-              }
-            },
-            child: const Text('Simpan'),
+                  try {
+                    if (jadwal == null) {
+                      await _jadwalService.createJadwal(
+                        kelasId: selectedKelasId!,
+                        mapelId: selectedMapelId!,
+                        hari: hari,
+                        jamMulai: jamMulai,
+                        jamSelesai: jamSelesai,
+                      );
+                    } else {
+                      await _jadwalService.updateJadwal(
+                        id: jadwal.id,
+                        kelasId: selectedKelasId!,
+                        mapelId: selectedMapelId!,
+                        hari: hari,
+                        jamMulai: jamMulai,
+                        jamSelesai: jamSelesai,
+                      );
+                    }
+
+                    Navigator.pop(ctx);
+                    _loadAllData();
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Gagal menyimpan: $e")),
+                    );
+                  }
+                },
+                child: const Text("Simpan"),
+              ),
+            ],
           ),
-        ],
-      ),
     );
-  }
-
-  List<MapelModel> _filteredMapelList(int? kelasId) {
-    if (kelasId == null) return [];
-    final namaKelas = _kelasList.firstWhere((k) => k.id == kelasId).namaKelas;
-    return _mapelList.where((mapel) => mapel.kelas.contains(namaKelas)).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final grouped = _groupByHari(_jadwalList);
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Manajemen Jadwal")),
-      body: ListView.builder(
-        itemCount: _jadwalList.length,
-        itemBuilder: (ctx, index) {
-          final jadwal = _jadwalList[index];
-          return ListTile(
-            title: Text('${jadwal.namaKelas} - ${jadwal.namaMapel}'),
-            subtitle: Text('${jadwal.hari}, ${jadwal.jamMulai} - ${jadwal.jamSelesai}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => _showForm(jadwal: jadwal),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () async {
-                    await _jadwalService.deleteJadwal(jadwal.id);
-                    _loadData();
-                  },
-                ),
-              ],
+      appBar: AppBar(title: const Text("Jadwal Pelajaran")),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: DropdownButtonFormField<KelasModel>(
+              value: _selectedKelas,
+              decoration: const InputDecoration(labelText: "Pilih Kelas"),
+              items:
+                  _kelasList
+                      .map(
+                        (k) => DropdownMenuItem(
+                          value: k,
+                          child: Text(k.namaKelas),
+                        ),
+                      )
+                      .toList(),
+              onChanged: (val) => setState(() => _selectedKelas = val),
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: ListView(
+              children:
+                  grouped.entries.map((entry) {
+                    final hari = entry.key;
+                    final list = entry.value;
+
+                    return ExpansionTile(
+                      title: Text(hari),
+                      children:
+                          list.isEmpty
+                              ? [
+                                const ListTile(title: Text("Tidak ada jadwal")),
+                              ]
+                              : list.map((j) {
+                                return ListTile(
+                                  title: Text(
+                                    "${j.jamMulai} - ${j.jamSelesai}",
+                                  ),
+                                  subtitle: Text(j.namaMapel ?? "-"),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.edit,
+                                          color: Colors.blue,
+                                        ),
+                                        onPressed: () => _showForm(jadwal: j),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                        ),
+                                        onPressed: () async {
+                                          await _jadwalService.deleteJadwal(
+                                            j.id,
+                                          );
+                                          _loadAllData();
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                    );
+                  }).toList(),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showForm(),
