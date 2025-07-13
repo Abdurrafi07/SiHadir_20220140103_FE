@@ -21,16 +21,9 @@ class _JadwalScreenState extends State<JadwalScreen> {
   List<JadwalModel> _jadwalList = [];
   List<KelasModel> _kelasList = [];
   List<MapelModel> _mapelList = [];
-  final List<String> _hariList = [
-    'Senin',
-    'Selasa',
-    'Rabu',
-    'Kamis',
-    'Jumat',
-    'Sabtu',
-  ];
+  final List<String> _hariList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
-  KelasModel? _selectedKelas;
+  int? _selectedKelasId;
 
   @override
   void initState() {
@@ -50,7 +43,7 @@ class _JadwalScreenState extends State<JadwalScreen> {
         _kelasList = kelas;
         _mapelList = mapel;
         if (_kelasList.isNotEmpty) {
-          _selectedKelas ??= _kelasList.first;
+          _selectedKelasId ??= _kelasList.first.id;
         }
       });
     } catch (e) {
@@ -59,17 +52,10 @@ class _JadwalScreenState extends State<JadwalScreen> {
   }
 
   Map<String, List<JadwalModel>> _groupByHari(List<JadwalModel> list) {
-    final Map<String, List<JadwalModel>> map = {
-      'Senin': [],
-      'Selasa': [],
-      'Rabu': [],
-      'Kamis': [],
-      'Jumat': [],
-      'Sabtu': [],
-    };
+    final map = {for (var h in _hariList) h: <JadwalModel>[]};
 
     for (var j in list) {
-      if (_selectedKelas != null && j.kelasId == _selectedKelas!.id) {
+      if (_selectedKelasId != null && j.kelasId == _selectedKelasId) {
         map[j.hari]?.add(j);
       }
     }
@@ -82,8 +68,36 @@ class _JadwalScreenState extends State<JadwalScreen> {
     return _mapelList.where((m) => m.kelas.contains(namaKelas)).toList();
   }
 
+  Future<String?> _pickTime(BuildContext context, String initial) async {
+    final parts = initial.split(":");
+    final initialTime = TimeOfDay(
+      hour: int.tryParse(parts.first) ?? 7,
+      minute: int.tryParse(parts.last) ?? 0,
+    );
+
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      initialEntryMode: TimePickerEntryMode.input,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      final hour = picked.hour.toString().padLeft(2, '0');
+      final minute = picked.minute.toString().padLeft(2, '0');
+      return "$hour:$minute";
+    }
+
+    return null;
+  }
+
   void _showForm({JadwalModel? jadwal}) {
-    int? selectedKelasId = jadwal?.kelasId ?? _selectedKelas?.id;
+    int? selectedKelasId = jadwal?.kelasId ?? _selectedKelasId;
     int? selectedMapelId = jadwal?.mapelId;
     String hari = jadwal?.hari ?? '';
     String jamMulai = jadwal?.jamMulai ?? '';
@@ -139,15 +153,23 @@ class _JadwalScreenState extends State<JadwalScreen> {
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
-                  initialValue: jamMulai,
+                  readOnly: true,
                   decoration: const InputDecoration(labelText: 'Jam Mulai'),
-                  onChanged: (val) => jamMulai = val,
+                  controller: TextEditingController(text: jamMulai),
+                  onTap: () async {
+                    final result = await _pickTime(context, jamMulai);
+                    if (result != null) setState(() => jamMulai = result);
+                  },
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
-                  initialValue: jamSelesai,
+                  readOnly: true,
                   decoration: const InputDecoration(labelText: 'Jam Selesai'),
-                  onChanged: (val) => jamSelesai = val,
+                  controller: TextEditingController(text: jamSelesai),
+                  onTap: () async {
+                    final result = await _pickTime(context, jamSelesai);
+                    if (result != null) setState(() => jamSelesai = result);
+                  },
                 ),
               ],
             ),
@@ -160,13 +182,8 @@ class _JadwalScreenState extends State<JadwalScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              if ([
-                selectedKelasId,
-                selectedMapelId,
-                hari,
-                jamMulai,
-                jamSelesai,
-              ].any((e) => e == null || (e is String && e.trim().isEmpty))) {
+              if ([selectedKelasId, selectedMapelId, hari, jamMulai, jamSelesai]
+                  .any((e) => e == null || (e is String && e.trim().isEmpty))) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Semua field wajib diisi")),
@@ -221,16 +238,16 @@ class _JadwalScreenState extends State<JadwalScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.all(12),
-            child: DropdownButtonFormField<KelasModel>(
-              value: _selectedKelas,
+            child: DropdownButtonFormField<int>(
+              value: _selectedKelasId,
               decoration: const InputDecoration(labelText: "Pilih Kelas"),
               items: _kelasList
                   .map((k) => DropdownMenuItem(
-                        value: k,
+                        value: k.id,
                         child: Text(k.namaKelas),
                       ))
                   .toList(),
-              onChanged: (val) => setState(() => _selectedKelas = val),
+              onChanged: (val) => setState(() => _selectedKelasId = val),
             ),
           ),
           Expanded(
@@ -242,9 +259,7 @@ class _JadwalScreenState extends State<JadwalScreen> {
                 return ExpansionTile(
                   title: Text(hari),
                   children: list.isEmpty
-                      ? [
-                          const ListTile(title: Text("Tidak ada jadwal")),
-                        ]
+                      ? [const ListTile(title: Text("Tidak ada jadwal"))]
                       : list.map((j) {
                           return ListTile(
                             title: Text("${j.jamMulai} - ${j.jamSelesai}"),
