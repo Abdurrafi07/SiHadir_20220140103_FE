@@ -4,11 +4,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:sihadir/data/model/kelola/absensi_massal_request.dart';
 import 'package:sihadir/data/model/kelola/jadwal_model.dart';
 import 'package:sihadir/presentation/absensi/bloc/absensi_bloc.dart';
 import 'package:sihadir/presentation/absensi/bloc/absensi_event.dart';
 import 'package:sihadir/presentation/absensi/bloc/absensi_state.dart';
+import 'package:sihadir/presentation/map/map_page.dart';
+import 'package:sihadir/presentation/camera/camera_page.dart';
 
 class PresensiScreen extends StatefulWidget {
   @override
@@ -20,6 +23,7 @@ class _PresensiScreenState extends State<PresensiScreen> {
   JadwalModel? selectedJadwal;
   File? _image;
   Position? _position;
+  String? _alamatDipilih;
   final Map<int, String> presensiStatus = {};
 
   @override
@@ -41,9 +45,7 @@ class _PresensiScreenState extends State<PresensiScreen> {
             final siswa = state.siswa;
 
             final hariList = jadwal.map((e) => e.hari).toSet().toList();
-            final mapelByHari = jadwal
-                .where((e) => e.hari == selectedHari)
-                .toList();
+            final mapelByHari = jadwal.where((e) => e.hari == selectedHari).toList();
 
             final siswaKelas = siswa;
 
@@ -57,9 +59,9 @@ class _PresensiScreenState extends State<PresensiScreen> {
                     value: selectedHari.isNotEmpty ? selectedHari : null,
                     hint: Text('Pilih Hari'),
                     items: hariList.map((h) => DropdownMenuItem(
-                      child: Text(h),
-                      value: h,
-                    )).toList(),
+                          child: Text(h),
+                          value: h,
+                        )).toList(),
                     onChanged: (val) {
                       setState(() {
                         selectedHari = val!;
@@ -73,9 +75,9 @@ class _PresensiScreenState extends State<PresensiScreen> {
                     value: selectedJadwal,
                     hint: Text('Pilih Mapel'),
                     items: mapelByHari.map((j) => DropdownMenuItem(
-                      child: Text(j.namaMapel ?? '-'),
-                      value: j,
-                    )).toList(),
+                          child: Text(j.namaMapel ?? '-'),
+                          value: j,
+                        )).toList(),
                     onChanged: (val) {
                       setState(() {
                         selectedJadwal = val;
@@ -85,8 +87,7 @@ class _PresensiScreenState extends State<PresensiScreen> {
                   if (selectedJadwal != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                          'Jam: ${selectedJadwal!.jamMulai} - ${selectedJadwal!.jamSelesai}'),
+                      child: Text('Jam: ${selectedJadwal!.jamMulai} - ${selectedJadwal!.jamSelesai}'),
                     ),
                   SizedBox(height: 16),
                   Divider(),
@@ -119,18 +120,37 @@ class _PresensiScreenState extends State<PresensiScreen> {
                     },
                   ),
                   SizedBox(height: 16),
-                  _image != null
-                      ? Image.file(_image!, height: 150)
-                      : ElevatedButton.icon(
-                          onPressed: _pickImage,
-                          icon: Icon(Icons.camera_alt),
-                          label: Text('Ambil Foto'),
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _showImageSourceActionSheet,
+                        icon: Icon(Icons.camera_alt),
+                        label: Text('Ambil/Galeri Foto'),
+                      ),
+                      SizedBox(width: 10),
+                      if (_image != null)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(_image!, height: 80),
                         ),
+                    ],
+                  ),
                   SizedBox(height: 10),
                   ElevatedButton.icon(
                     onPressed: _ambilLokasi,
                     icon: Icon(Icons.location_on),
-                    label: Text('Ambil Lokasi'),
+                    label: Text('Ambil Lokasi Sekarang'),
+                  ),
+                  if (_position != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text('Lat: ${_position!.latitude}, Long: ${_position!.longitude}'),
+                    ),
+                  SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    onPressed: _pilihAlamat,
+                    icon: Icon(Icons.map),
+                    label: Text(_alamatDipilih ?? 'Pilih Lokasi di Peta'),
                   ),
                   SizedBox(height: 10),
                   ElevatedButton(
@@ -153,22 +173,85 @@ class _PresensiScreenState extends State<PresensiScreen> {
     );
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.camera);
-    if (picked != null) {
-      setState(() {
-        _image = File(picked.path);
-      });
+  Future<void> _requestPermissions() async {
+    await Permission.camera.request();
+    await Permission.storage.request();
+    await Permission.location.request();
+  }
+
+  Future<void> _takePicture() async {
+    await _requestPermissions();
+    final File? result = await Navigator.push<File?>(
+      context,
+      MaterialPageRoute(builder: (_) => const CameraPage()),
+    );
+    if (result != null) {
+      setState(() => _image = result);
     }
   }
 
+  Future<void> _pickFromGallery() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => _image = File(picked.path));
+    }
+  }
+
+  void _showImageSourceActionSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Pilih dari Galeri'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickFromGallery();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Gunakan Kamera'),
+              onTap: () {
+                Navigator.pop(context);
+                _takePicture();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _ambilLokasi() async {
-    final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
-    setState(() {
-      _position = pos;
-    });
+    try {
+      await _requestPermissions();
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      setState(() {
+        _position = position;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal mengambil lokasi: $e')),
+      );
+    }
+  }
+
+  Future<void> _pilihAlamat() async {
+    final alamat = await Navigator.push<String?>(
+      context,
+      MaterialPageRoute(builder: (_) => const MapPage()),
+    );
+    if (alamat != null && alamat.isNotEmpty) {
+      setState(() {
+        _alamatDipilih = alamat;
+      });
+    }
   }
 
   void _submitAbsensi() {
