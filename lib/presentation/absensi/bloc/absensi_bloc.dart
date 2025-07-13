@@ -37,6 +37,7 @@ class AbsensiBloc extends Bloc<AbsensiEvent, AbsensiState> {
         fotoPath: event.fotoPath,
         latitude: event.latitude,
         longitude: event.longitude,
+        alamat: event.alamat,
       );
       final response = await absensiService.kirimMassal(req);
       if (response.statusCode == 201) {

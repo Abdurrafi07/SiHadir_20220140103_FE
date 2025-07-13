@@ -11,6 +11,7 @@ class SubmitAbsensiMassal extends AbsensiEvent {
   final String? fotoPath;
   final double? latitude;
   final double? longitude;
+  final String? alamat;
 
   SubmitAbsensiMassal({
     required this.jadwalId,
@@ -19,5 +20,6 @@ class SubmitAbsensiMassal extends AbsensiEvent {
     this.fotoPath,
     this.latitude,
     this.longitude,
+    this.alamat,
   });
 }

@@ -22,6 +22,7 @@ Future<http.Response> kirimMassal(AbsensiMassalRequest request) async {
   req.fields['tanggal'] = request.tanggal;
   req.fields['latitude'] = request.latitude?.toString() ?? '';
   req.fields['longitude'] = request.longitude?.toString() ?? '';
+  req.fields['alamat'] = request.alamat ?? '';
 
   for (int i = 0; i < request.presensi.length; i++) {
     final p = request.presensi[i];

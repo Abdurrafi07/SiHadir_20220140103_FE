@@ -35,7 +35,7 @@ class _PresensiScreenState extends State<PresensiScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Presensi Massal')),
+      appBar: AppBar(title: Text('Presensi')),
       body: BlocBuilder<AbsensiBloc, AbsensiState>(
         builder: (context, state) {
           if (state is AbsensiLoading) {
@@ -277,6 +277,7 @@ class _PresensiScreenState extends State<PresensiScreen> {
           fotoPath: _image?.path,
           latitude: _position?.latitude,
           longitude: _position?.longitude,
+          alamat: _alamatDipilih, 
         ));
   }
 }

@@ -27,6 +27,21 @@ class _GuruHomeScreenState extends State<GuruHomeScreen> {
     });
   }
 
+  void _logout() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  void _navigateToAbsensi() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => PresensiScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,13 +50,8 @@ class _GuruHomeScreenState extends State<GuruHomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
-              );
-            },
+            onPressed: _logout,
+            tooltip: 'Keluar',
           ),
         ],
       ),
@@ -52,7 +62,7 @@ class _GuruHomeScreenState extends State<GuruHomeScreen> {
           children: [
             Text(
               'Hai $userName 👩‍🏫\nSelamat mengajar!',
-              style: const TextStyle(fontSize: 18),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18),
             ),
             const SizedBox(height: 30),
             Expanded(
@@ -61,17 +71,12 @@ class _GuruHomeScreenState extends State<GuruHomeScreen> {
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
                 children: [
-
                   _buildMenuButton(
                     icon: Icons.check_circle_outline,
                     label: 'Absensi',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) =>  PresensiScreen()),
-                      );
-                    },
+                    onTap: _navigateToAbsensi,
                   ),
+                  // Tambahkan menu lainnya di sini jika diperlukan
                 ],
               ),
             ),
@@ -91,8 +96,10 @@ class _GuruHomeScreenState extends State<GuruHomeScreen> {
         padding: const EdgeInsets.all(16),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 3,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
       onPressed: onTap,
       child: Column(
@@ -102,8 +109,8 @@ class _GuruHomeScreenState extends State<GuruHomeScreen> {
           const SizedBox(height: 10),
           Text(
             label,
-            style: const TextStyle(fontSize: 16),
             textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ],
       ),

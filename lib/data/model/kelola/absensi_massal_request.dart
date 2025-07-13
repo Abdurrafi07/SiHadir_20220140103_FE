@@ -17,6 +17,7 @@ class AbsensiMassalRequest {
   final String? fotoPath;
   final double? latitude;
   final double? longitude;
+  final String? alamat; 
 
   AbsensiMassalRequest({
     required this.jadwalId,
@@ -25,5 +26,6 @@ class AbsensiMassalRequest {
     this.fotoPath,
     this.latitude,
     this.longitude,
+    this.alamat,
   });
 }
