@@ -45,7 +45,8 @@ class _PresensiScreenState extends State<PresensiScreen> {
             final siswa = state.siswa;
 
             final hariList = jadwal.map((e) => e.hari).toSet().toList();
-            final mapelByHari = jadwal.where((e) => e.hari == selectedHari).toList();
+            final mapelByHari =
+                jadwal.where((e) => e.hari == selectedHari).toList();
 
             final siswaKelas = siswa;
 
@@ -58,10 +59,12 @@ class _PresensiScreenState extends State<PresensiScreen> {
                   DropdownButton<String>(
                     value: selectedHari.isNotEmpty ? selectedHari : null,
                     hint: Text('Pilih Hari'),
-                    items: hariList.map((h) => DropdownMenuItem(
-                          child: Text(h),
-                          value: h,
-                        )).toList(),
+                    items:
+                        hariList
+                            .map(
+                              (h) => DropdownMenuItem(child: Text(h), value: h),
+                            )
+                            .toList(),
                     onChanged: (val) {
                       setState(() {
                         selectedHari = val!;
@@ -74,10 +77,15 @@ class _PresensiScreenState extends State<PresensiScreen> {
                   DropdownButton<JadwalModel>(
                     value: selectedJadwal,
                     hint: Text('Pilih Mapel'),
-                    items: mapelByHari.map((j) => DropdownMenuItem(
-                          child: Text(j.namaMapel ?? '-'),
-                          value: j,
-                        )).toList(),
+                    items:
+                        mapelByHari
+                            .map(
+                              (j) => DropdownMenuItem(
+                                child: Text(j.namaMapel ?? '-'),
+                                value: j,
+                              ),
+                            )
+                            .toList(),
                     onChanged: (val) {
                       setState(() {
                         selectedJadwal = val;
@@ -87,7 +95,9 @@ class _PresensiScreenState extends State<PresensiScreen> {
                   if (selectedJadwal != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
-                      child: Text('Jam: ${selectedJadwal!.jamMulai} - ${selectedJadwal!.jamSelesai}'),
+                      child: Text(
+                        'Jam: ${selectedJadwal!.jamMulai} - ${selectedJadwal!.jamSelesai}',
+                      ),
                     ),
                   SizedBox(height: 16),
                   Divider(),
@@ -104,12 +114,13 @@ class _PresensiScreenState extends State<PresensiScreen> {
                         trailing: DropdownButton<String>(
                           value: presensiStatus[s.id],
                           hint: Text('Status'),
-                          items: ['hadir', 'izin', 'sakit', 'alfa'].map((status) {
-                            return DropdownMenuItem(
-                              value: status,
-                              child: Text(status),
-                            );
-                          }).toList(),
+                          items:
+                              ['hadir', 'izin', 'sakit', 'alfa'].map((status) {
+                                return DropdownMenuItem(
+                                  value: status,
+                                  child: Text(status),
+                                );
+                              }).toList(),
                           onChanged: (val) {
                             setState(() {
                               presensiStatus[s.id] = val!;
@@ -144,7 +155,9 @@ class _PresensiScreenState extends State<PresensiScreen> {
                   if (_position != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4.0),
-                      child: Text('Lat: ${_position!.latitude}, Long: ${_position!.longitude}'),
+                      child: Text(
+                        'Lat: ${_position!.latitude}, Long: ${_position!.longitude}',
+                      ),
                     ),
                   SizedBox(height: 10),
                   ElevatedButton.icon(
@@ -156,7 +169,7 @@ class _PresensiScreenState extends State<PresensiScreen> {
                   ElevatedButton(
                     onPressed: _submitAbsensi,
                     child: Text('Kirim Presensi'),
-                  )
+                  ),
                 ],
               ),
             );
@@ -165,8 +178,25 @@ class _PresensiScreenState extends State<PresensiScreen> {
           } else if (state is AbsensiSuccess) {
             return Center(child: Text(state.message));
           } else if (state is AbsensiError) {
-            return Center(child: Text('Error: ${state.message}'));
+            if (state.message.contains('Semua siswa sudah absen')) {
+              return Center(
+                child: Text(
+                  '✅ ${state.message}',
+                  style: TextStyle(color: Colors.green, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            }
+
+            return Center(
+              child: Text(
+                '❌ Terjadi kesalahan: ${state.message}',
+                style: TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+            );
           }
+
           return Container();
         },
       ),
@@ -201,28 +231,29 @@ class _PresensiScreenState extends State<PresensiScreen> {
   void _showImageSourceActionSheet() {
     showModalBottomSheet(
       context: context,
-      builder: (_) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text('Pilih dari Galeri'),
-              onTap: () {
-                Navigator.pop(context);
-                _pickFromGallery();
-              },
+      builder:
+          (_) => SafeArea(
+            child: Wrap(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('Pilih dari Galeri'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickFromGallery();
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.camera_alt),
+                  title: const Text('Gunakan Kamera'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _takePicture();
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text('Gunakan Kamera'),
-              onTap: () {
-                Navigator.pop(context);
-                _takePicture();
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -236,9 +267,9 @@ class _PresensiScreenState extends State<PresensiScreen> {
         _position = position;
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengambil lokasi: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengambil lokasi: $e')));
     }
   }
 
@@ -257,27 +288,28 @@ class _PresensiScreenState extends State<PresensiScreen> {
   void _submitAbsensi() {
     if (selectedJadwal == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Pilih hari dan mapel terlebih dahulu')));
+        SnackBar(content: Text('Pilih hari dan mapel terlebih dahulu')),
+      );
       return;
     }
 
     final now = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-    final presensi = presensiStatus.entries.map((e) {
-      return PresensiItem(
-        siswaId: e.key,
-        status: e.value,
-      );
-    }).toList();
+    final presensi =
+        presensiStatus.entries.map((e) {
+          return PresensiItem(siswaId: e.key, status: e.value);
+        }).toList();
 
-    context.read<AbsensiBloc>().add(SubmitAbsensiMassal(
-          jadwalId: selectedJadwal!.id,
-          tanggal: now,
-          presensi: presensi,
-          fotoPath: _image?.path,
-          latitude: _position?.latitude,
-          longitude: _position?.longitude,
-          alamat: _alamatDipilih, 
-        ));
+    context.read<AbsensiBloc>().add(
+      SubmitAbsensiMassal(
+        jadwalId: selectedJadwal!.id,
+        tanggal: now,
+        presensi: presensi,
+        fotoPath: _image?.path,
+        latitude: _position?.latitude,
+        longitude: _position?.longitude,
+        alamat: _alamatDipilih,
+      ),
+    );
   }
 }
