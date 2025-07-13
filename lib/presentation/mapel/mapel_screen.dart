@@ -59,37 +59,39 @@ class _MapelScreenState extends State<MapelScreen> {
       builder: (ctx) {
         return AlertDialog(
           title: Text(mapel == null ? 'Tambah Mapel' : 'Edit Mapel'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: _namaMapelController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Mapel',
-                    border: OutlineInputBorder(),
+          content: StatefulBuilder(
+            builder: (context, setStateDialog) => SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _namaMapelController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Mapel',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text("Pilih Kelas", style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-                ..._kelasList.map((kelas) => CheckboxListTile(
-                      value: _selectedKelasIds.contains(kelas.id),
-                      title: Text(kelas.namaKelas),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      onChanged: (val) {
-                        setState(() {
-                          if (val == true) {
-                            _selectedKelasIds.add(kelas.id);
-                          } else {
-                            _selectedKelasIds.remove(kelas.id);
-                          }
-                        });
-                      },
-                    )),
-              ],
+                  const SizedBox(height: 12),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text("Pilih Kelas", style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  ..._kelasList.map((kelas) => CheckboxListTile(
+                        value: _selectedKelasIds.contains(kelas.id),
+                        title: Text(kelas.namaKelas),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        onChanged: (val) {
+                          setStateDialog(() {
+                            if (val == true) {
+                              _selectedKelasIds.add(kelas.id);
+                            } else {
+                              _selectedKelasIds.remove(kelas.id);
+                            }
+                          });
+                        },
+                      )),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -187,7 +189,9 @@ class _MapelScreenState extends State<MapelScreen> {
                       final mapel = filtered.elementAt(index);
                       return ListTile(
                         title: Text(mapel.namaMapel),
-                        subtitle: Text('Kelas: ${mapel.kelas.join(", ")}'),
+                        subtitle: _filterKelasId == null
+                            ? Text('Kelas: ${mapel.kelas.join(", ")}')
+                            : null,
                         trailing: _filterKelasId == null
                             ? Row(
                                 mainAxisSize: MainAxisSize.min,
