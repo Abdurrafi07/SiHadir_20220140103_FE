@@ -17,7 +17,8 @@ class MapelScreen extends StatefulWidget {
 class _MapelScreenState extends State<MapelScreen> {
   final TextEditingController _namaMapelController = TextEditingController();
   List<KelasModel> _kelasList = [];
-  int? _selectedKelasId;
+  List<int> _selectedKelasIds = [];
+  int? _filterKelasId;
 
   @override
   void initState() {
@@ -38,84 +39,92 @@ class _MapelScreenState extends State<MapelScreen> {
 
   void _showMapelForm({MapelModel? mapel}) {
     _namaMapelController.text = mapel?.namaMapel ?? '';
-    _selectedKelasId = null;
+    _selectedKelasIds = [];
 
-    // Jika mode edit dan ada kelas
     if (mapel != null && mapel.kelas.isNotEmpty) {
-      final kelas = _kelasList.firstWhere(
-        (k) => k.namaKelas == mapel.kelas.first,
-        orElse: () => KelasModel(id: -1, namaKelas: '', mapel: []),
-      );
-      if (kelas.id != -1) _selectedKelasId = kelas.id;
+      for (var namaKelas in mapel.kelas) {
+        final kelas = _kelasList.firstWhere(
+          (k) => k.namaKelas == namaKelas,
+          orElse: () => KelasModel(id: -1, namaKelas: '', mapel: []),
+        );
+        if (kelas.id != -1) _selectedKelasIds.add(kelas.id);
+      }
     }
 
     showDialog(
       context: context,
       builder: (ctx) {
-        return AlertDialog(
-          title: Text(mapel == null ? 'Tambah Mapel' : 'Edit Mapel'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: _namaMapelController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Mapel',
-                    border: OutlineInputBorder(),
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text(mapel == null ? 'Tambah Mapel' : 'Edit Mapel'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _namaMapelController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Mapel',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<int>(
-                  value: _selectedKelasId,
-                  items: _kelasList
-                      .map((kelas) => DropdownMenuItem<int>(
-                            value: kelas.id,
-                            child: Text(kelas.namaKelas),
-                          ))
-                      .toList(),
-                  onChanged: (val) => setState(() => _selectedKelasId = val),
-                  decoration: const InputDecoration(
-                    labelText: 'Pilih Kelas',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 12),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Pilih Kelas:', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
-                ),
-              ],
+                  ..._kelasList.map((kelas) {
+                    return CheckboxListTile(
+                      value: _selectedKelasIds.contains(kelas.id),
+                      title: Text(kelas.namaKelas),
+                      onChanged: (val) {
+                        setState(() {
+                          if (val == true) {
+                            _selectedKelasIds.add(kelas.id);
+                          } else {
+                            _selectedKelasIds.remove(kelas.id);
+                          }
+                        });
+                      },
+                    );
+                  }).toList(),
+                ],
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  final nama = _namaMapelController.text.trim();
+                  if (nama.isEmpty || _selectedKelasIds.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Nama mapel dan kelas wajib diisi')),
+                    );
+                    return;
+                  }
+
+                  if (mapel == null) {
+                    context.read<MapelBloc>().add(AddMapel(
+                          namaMapel: nama,
+                          kelasIds: _selectedKelasIds,
+                        ));
+                  } else {
+                    context.read<MapelBloc>().add(UpdateMapel(
+                          id: mapel.id,
+                          namaMapel: nama,
+                          kelasIds: _selectedKelasIds,
+                        ));
+                  }
+
+                  Navigator.pop(ctx);
+                },
+                child: const Text('Simpan'),
+              )
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final nama = _namaMapelController.text.trim();
-                if (nama.isEmpty || _selectedKelasId == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Nama mapel dan kelas wajib diisi')),
-                  );
-                  return;
-                }
-
-                if (mapel == null) {
-                  context.read<MapelBloc>().add(AddMapel(
-                        namaMapel: nama,
-                        kelasIds: [_selectedKelasId!],
-                      ));
-                } else {
-                  context.read<MapelBloc>().add(UpdateMapel(
-                        id: mapel.id,
-                        namaMapel: nama,
-                        kelasIds: [_selectedKelasId!],
-                      ));
-                }
-
-                Navigator.pop(ctx);
-              },
-              child: const Text('Simpan'),
-            )
-          ],
         );
       },
     );
@@ -131,42 +140,81 @@ class _MapelScreenState extends State<MapelScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Data Mapel')),
-      body: BlocBuilder<MapelBloc, MapelState>(
-        builder: (context, state) {
-          if (state is MapelLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (state is MapelLoaded) {
-            if (state.mapel.isEmpty) {
-              return const Center(child: Text("Belum ada data mapel."));
-            }
-            return ListView.builder(
-              itemCount: state.mapel.length,
-              itemBuilder: (ctx, index) {
-                final mapel = state.mapel[index];
-                return ListTile(
-                  title: Text(mapel.namaMapel),
-                  subtitle: Text('Kelas: ${mapel.kelas.join(", ")}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blue),
-                        onPressed: () => _showMapelForm(mapel: mapel),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => context.read<MapelBloc>().add(DeleteMapel(mapel.id)),
-                      )
-                    ],
-                  ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: DropdownButtonFormField<int>(
+              value: _filterKelasId,
+              hint: const Text("Filter berdasarkan kelas"),
+              decoration: const InputDecoration(
+                labelText: "Filter Kelas",
+                border: OutlineInputBorder(),
+              ),
+              items: _kelasList.map((kelas) {
+                return DropdownMenuItem<int>(
+                  value: kelas.id,
+                  child: Text(kelas.namaKelas),
                 );
+              }).toList()
+                ..insert(
+                  0,
+                  const DropdownMenuItem<int>(
+                    value: null,
+                    child: Text("Semua Kelas"),
+                  ),
+                ),
+              onChanged: (val) => setState(() => _filterKelasId = val),
+            ),
+          ),
+          Expanded(
+            child: BlocBuilder<MapelBloc, MapelState>(
+              builder: (context, state) {
+                if (state is MapelLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (state is MapelLoaded) {
+                  final mapelFiltered = _filterKelasId == null
+                      ? state.mapel
+                      : state.mapel.where((m) => m.kelas.any((k) {
+                            final kelas = _kelasList.firstWhere((kel) => kel.id == _filterKelasId, orElse: () => KelasModel(id: 0, namaKelas: '', mapel: []));
+                            return k == kelas.namaKelas;
+                          })).toList();
+
+                  if (mapelFiltered.isEmpty) {
+                    return const Center(child: Text("Tidak ada data mapel."));
+                  }
+
+                  return ListView.builder(
+                    itemCount: mapelFiltered.length,
+                    itemBuilder: (ctx, index) {
+                      final mapel = mapelFiltered[index];
+                      return ListTile(
+                        title: Text(mapel.namaMapel),
+                        subtitle: Text('Kelas: ${mapel.kelas.join(", ")}'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, color: Colors.blue),
+                              onPressed: () => _showMapelForm(mapel: mapel),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => context.read<MapelBloc>().add(DeleteMapel(mapel.id)),
+                            )
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                } else if (state is MapelError) {
+                  return Center(child: Text("Error: ${state.message}"));
+                }
+                return const Center(child: Text("Tidak ada data."));
               },
-            );
-          } else if (state is MapelError) {
-            return Center(child: Text("Error: ${state.message}"));
-          }
-          return const Center(child: Text("Tidak ada data."));
-        },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showMapelForm(),
