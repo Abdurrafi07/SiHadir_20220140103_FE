@@ -55,7 +55,7 @@ class _AbsensiListScreenState extends State<AbsensiListScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Tanggal: ${item['tanggal']}'),
-                        Text('Mapel: ${item['jadwal']['nama_mapel'] ?? '-'}'),
+                        Text('Mapel: ${item['jadwal']['mapel']?['nama_mapel'] ?? '-'}'),
                         Text('Alamat: ${item['alamat'] ?? '-'}'),
                       ],
                     ),
